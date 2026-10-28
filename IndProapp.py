@@ -85,7 +85,7 @@ if st.session_state.current_movies:
                     st.rerun()
 
 st.divider()
-st.subheader("📌 Список просмотренных фильмов")
+st.subheader("📌Список просмотренных фильмов📌")
 if not st.session_state.watched_movies:
     st.info("Список пока пуст.")
 else:
