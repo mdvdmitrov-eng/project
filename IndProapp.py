@@ -2,19 +2,16 @@ import requests
 import streamlit as st
 import random
 from deep_translator import MyMemoryTranslator
-
-# Настройка внешнего вида страницы
+#Настройка внешнего вида страницы
 st.set_page_config(page_title="Кинорулетка", page_icon="🎬")
 st.title("🎬 Кинорулетка")
-st.write("Нажмите кнопку, чтобы получить случайную подборку фильмов.")
-
-# Безопасное получение ключа
+st.write("Нажмите сюда, чтобы получить  подборку фильмов.")
+#Безопасное получение ключа
 try:
     API_KEY = st.secrets["OMDB_API_KEY"]
 except KeyError:
     st.error("Ошибка: API-ключ не найден! Добавьте OMDB_API_KEY в секреты.")
     st.stop()
-
 if 'watched_movies' not in st.session_state:
     st.session_state.watched_movies = {}
 if 'current_movies' not in st.session_state:
@@ -39,7 +36,6 @@ def translate_to_ru(text):
         return MyMemoryTranslator(source='en-US', target='ru-RU').translate(text)
     except Exception:
         return text
-
 def get_diverse_movies():
     movies = []
     for kw in random.sample(random_keywords, 2):
@@ -59,7 +55,7 @@ def get_diverse_movies():
         movies.append(random.choice(res['Search']))
     return movies
 
-# --- ИНТЕРФЕЙС STREAMLIT ---
+#  ИНТЕРФЕЙС STREAMLIT 
 if st.button("Показать 5 фильмов", type="primary"):
     with st.spinner("Ищем разнообразные фильмы и переводим названия..."):
         movies = get_diverse_movies()
