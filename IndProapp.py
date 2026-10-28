@@ -6,6 +6,7 @@ from deep_translator import MyMemoryTranslator
 st.set_page_config(page_title="Кинорулетка", page_icon="🎬")
 st.title("🎬 Кинорулетка")
 st.write("Нажмите сюда, чтобы получить  подборку фильмов.")
+#Ссылка на проект (https://proektkino.streamlit.app/)
 #Безопасное получение ключа
 try:
     API_KEY = st.secrets["OMDB_API_KEY"]
