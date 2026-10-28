@@ -1,0 +1,98 @@
+%%writefile app.py
+import requests
+import streamlit as st
+import random
+from deep_translator import MyMemoryTranslator
+
+# Настройка внешнего вида страницы
+st.set_page_config(page_title="Кинорулетка", page_icon="🎬")
+st.title("🎬 Кинорулетка")
+st.write("Нажмите кнопку, чтобы получить случайную подборку фильмов.")
+
+# Безопасное получение ключа
+try:
+    API_KEY = st.secrets["OMDB_API_KEY"]
+except KeyError:
+    st.error("Ошибка: API-ключ не найден! Добавьте OMDB_API_KEY в секреты.")
+    st.stop()
+
+if 'watched_movies' not in st.session_state:
+    st.session_state.watched_movies = {}
+if 'current_movies' not in st.session_state:
+    st.session_state.current_movies = []
+
+random_keywords = [
+    "star", "night", "love", "war", "dark", "man", "day", "life", "world", "game",
+    "time", "fire", "blue", "red", "black", "white", "dead", "lost", "secret", "house",
+    "city", "heart", "dream", "ghost", "blood", "king", "queen", "girl", "boy", "dog"]
+genres = [
+    "horror", "comedy", "action", "drama", "sci-fi", "thriller", "romance",
+    "fantasy", "mystery", "adventure", "crime", "animation", "family", "history",
+    "music", "war", "western", "sport", "biography", "documentary"]
+years = [
+    "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015",
+    "2014", "2013", "2012", "2010", "2008", "2005", "2000", "1995", "1990", "1985",
+    "1980", "1975", "1970", "1960"]
+
+@st.cache_data(show_spinner=False)
+def translate_to_ru(text):
+    try:
+        return MyMemoryTranslator(source='en-US', target='ru-RU').translate(text)
+    except Exception:
+        return text
+
+def get_diverse_movies():
+    movies = []
+    for kw in random.sample(random_keywords, 2):
+        params = {"apikey": API_KEY, "s": kw, "type": "movie"}
+        res = requests.get("http://www.omdbapi.com/", params=params).json()
+        if res.get('Response') == 'True':
+            movies.append(random.choice(res['Search']))
+    for genre in random.sample(genres, 2):
+        params = {"apikey": API_KEY, "s": genre, "type": "movie"}
+        res = requests.get("http://www.omdbapi.com/", params=params).json()
+        if res.get('Response') == 'True':
+            movies.append(random.choice(res['Search']))
+    year = random.choice(years)
+    params = {"apikey": API_KEY, "s": year, "type": "movie"}
+    res = requests.get("http://www.omdbapi.com/", params=params).json()
+    if res.get('Response') == 'True':
+        movies.append(random.choice(res['Search']))
+    return movies
+
+# --- ИНТЕРФЕЙС STREAMLIT ---
+if st.button("Показать 5 фильмов", type="primary"):
+    with st.spinner("Ищем разнообразные фильмы и переводим названия..."):
+        movies = get_diverse_movies()
+        if not movies:
+            st.error("Не удалось получить фильмы. Проверьте лимит запросов.")
+        else:
+            unique_movies = {m['imdbID']: m for m in movies}.values()
+            prepared = []
+            for movie in unique_movies:
+                title_en = movie.get('Title', 'Без названия')
+                year = movie.get('Year', '----')
+                title_ru = translate_to_ru(title_en)
+                prepared.append({"ru": title_ru, "en": title_en, "year": year})
+            st.session_state.current_movies = prepared
+
+if st.session_state.current_movies:
+    st.subheader("Ваша подборка:")
+    for idx, movie in enumerate(st.session_state.current_movies):
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.write(f"**{movie['ru']}** ({movie['year']})")
+            st.caption(f"Оригинал: {movie['en']}")
+        with col2:
+            if movie['ru'] not in st.session_state.watched_movies:
+                if st.button("Просмотрено", key=f"watch_{idx}"):
+                    st.session_state.watched_movies[movie['ru']] = movie
+                    st.rerun()
+
+st.divider()
+st.subheader("📌 Список просмотренных фильмов")
+if not st.session_state.watched_movies:
+    st.info("Список пока пуст.")
+else:
+    for title_ru, info in st.session_state.watched_movies.items():
+        st.write(f"✅ **{title_ru}** ({info['year']}) — *Оригинал: {info['en']}*")
